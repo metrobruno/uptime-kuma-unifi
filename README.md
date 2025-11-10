@@ -10,20 +10,6 @@ Executa de forma leve e segura a cada minuto, via **Agendador de Tarefas (Window
 
 ---
 
-## ⚙️ Estrutura do Projeto
-
-📁 .
-├── .env # Variáveis de ambiente (host, API, webhooks)
-├── .env_example # Exemplo de configuração
-├── .gitignore # Itens ignorados pelo Git
-├── wan_status_state.json # Armazena o estado anterior dos links
-└── webhook.py # Script principal
-
-yaml
-Copiar código
-
----
-
 ## 🚀 Funcionalidades
 
 ✅ Consulta o status atual das interfaces WAN via API UniFi  
