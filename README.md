@@ -28,8 +28,6 @@ Executa de forma leve e segura a cada minuto, via **Agendador de Tarefas (Window
    cp .env_example .env
 Edite o .env e adicione suas variáveis:
 
-ini
-Copiar código
 UNIFI_HOST=172.16.0.1
 UNIFI_PORT=443
 SITE_ID=default
@@ -44,8 +42,7 @@ SLACK_WEBHOOK_URL=https://hooks.slack.com/services/SEU/WEBHOOK/AQUI
 
 Instale as dependências:
 
-bash
-Copiar código
+
 pip install requests urllib3 python-dotenv
 🧠 Como Funciona
 O script lê o status das interfaces WAN (wan1, wan2) via API UniFi
@@ -63,42 +60,25 @@ Salva o novo estado no JSON
 💬 Exemplo de Notificações
 🟥 Quando o link cai:
 
-perl
-Copiar código
 🔴 Atenção: O link *VIVO* está com uma interrupção no momento.
 A conexão pode apresentar instabilidade.
 Nossa equipe de TI já foi notificada e está cuidando do problema.
 🟩 Quando o link volta:
-
-bash
-Copiar código
 🟢 Serviço Recuperado: O link *VIVO* está novamente operacional.
 🕹️ Execução
 Rodando manualmente
-bash
-Copiar código
 python webhook.py
 Rodando em background (sem console)
 bash
-Copiar código
 pythonw webhook.py
 Execução automática
 Windows: Agende via Agendador de Tarefas a cada 1 minuto
 
-Linux/macOS: Adicione ao crontab:
-
-bash
-Copiar código
-* * * * * /usr/bin/python3 /caminho/para/webhook.py
-🧩 Integração com Uptime Kuma
-Cada link (Vivo / Mundivox, etc.) deve estar cadastrado no Kuma como monitor tipo “Push”.
-O script enviará automaticamente os heartbeats, mantendo o status sincronizado.
-
 Você pode estilizar sua página pública do Kuma com CSS customizado — veja o tema sugerido em /styles/kuma-dark.css.
 
 🗂️ Exemplo de Log
-yaml
-Copiar código
+
+
 INFO: Iniciando script de monitoramento...
 INFO: Dispositivo Gateway encontrado: UDM-Pro
 INFO: Notificação Slack enviada para MUNDIVOX
