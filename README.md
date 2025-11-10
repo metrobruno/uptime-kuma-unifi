@@ -1,148 +1,125 @@
-Monitoramento Stateful de WAN UniFi com Alertas para Slack
+# 🛰️ UniFi Network Monitor — Slack + Uptime Kuma
 
-1. Visão Geral
-Este projeto implementa um script de monitoramento robusto para gateways UniFi (ex: UDM Pro) que desacopla o histórico de uptime da lógica de alertas.
+Script em **Python** para monitoramento de links **WAN** em dispositivos **UniFi**, com:
+- 🔔 Notificações automáticas no **Slack** com mensagens personalizadas  
+- 💓 Integração direta com **Uptime Kuma** via *Push API*  
+- 💾 Persistência de estado para evitar alertas duplicados  
 
-O Uptime Kuma é usado puramente como um dashboard histórico (através de monitores Push). A lógica de notificação é movida inteiramente para este script Python, que:
+Ideal para automatizar alertas de conectividade (ex: links de internet, WAN redundante, MPLS etc.)  
+Executa de forma leve e segura a cada minuto, via **Agendador de Tarefas (Windows)** ou **cron (Linux)**.
 
-Consulta a API oficial do UniFi para obter o status real das portas WAN.
+---
 
-Mantém seu próprio "estado" (wan_status_state.json) para entender quando um link realmente muda (de UP para DOWN, ou vice-versa).
+## ⚙️ Estrutura do Projeto
 
-Envia alertas ricos e formatados (via JSON Block Kit) diretamente para o Slack apenas na mudança de estado, eliminando o "spam" de notificações repetitivas.
+📁 .
+├── .env # Variáveis de ambiente (host, API, webhooks)
+├── .env_example # Exemplo de configuração
+├── .gitignore # Itens ignorados pelo Git
+├── wan_status_state.json # Armazena o estado anterior dos links
+└── webhook.py # Script principal
 
-2. Recursos Principais
-Monitoramento Direto via API: Utiliza uma API Key do UniFi para consultar endpoints de forma eficiente, sem dependências de bibliotecas de terceiros como pyunifi.
+yaml
+Copiar código
 
-Notificações "Stateful": O script é ciente do estado anterior. Alertas de "queda" só são enviados na primeira deteção, e alertas de "recuperação" só são enviados na primeira deteção de normalização.
+---
 
-Alertas Ricos no Slack: Envia mensagens JSON attachments formatadas (Block Kit) para o Slack, com cores (vermelho/verde) e formatação profissional, em vez das mensagens de texto simples padrão.
+## 🚀 Funcionalidades
 
-Integração com Uptime Kuma: Envia um heartbeat (push) ao Uptime Kuma sempre que os links estão operacionais, permitindo um dashboard gráfico e um histórico de SLA.
+✅ Consulta o status atual das interfaces WAN via API UniFi  
+✅ Envia *heartbeat* para o Uptime Kuma mantendo a página de status atualizada  
+✅ Dispara mensagens no Slack apenas quando há mudança de estado  
+✅ Exibe mensagens personalizadas e “humanizadas” (sem jargão técnico)  
+✅ Loga resultados e mantém estado entre execuções  
 
-3. Arquitetura do Fluxo de Dados
-Este script atua como um "middleware" inteligente entre os seus sistemas.
+---
 
-+---------------------+
-| Agendador de        |
-| Tarefas (Windows)   |-- (Executa a cada 1 min) --> +---------------+
-+---------------------+                                |               |
-                                                     |  Script       |
-+---------------------+                                |  Python       |
-| API do UniFi        |<-- (Consulta status WAN) --- |               |
-| (UDM Pro)           |                                +-------+-------+
-+---------------------+                                        |
-         |                                                     |
-         v (Compara estado)                                    |
-+---------------------+                                        | (Envia push se UP)
-| wan_status_state.json| <--(Lê/Grava estado)                  |
-| (Ficheiro de Estado)  |                                        v
-+---------------------+                                +---------------+
-                                                         | Uptime Kuma   |
-                                                         +---------------+
-                                                         |
-                                                         | (Envia alerta
-                                                         |  *se* o estado mudou)
-                                                         v
-                                                     +----------------+
-                                                     | Slack Webhook  |
-                                                     +----------------+
-4. Configuração
-4.1. Pré-requisitos
-Python 3.9 ou superior.
+## 🔧 Configuração
 
-A biblioteca requests: pip install requests
+1. Copie o arquivo `.env_example` para `.env`:
 
-4.2. Geração de Chaves e URLs
-UniFi Controller (UDM Pro):
+   ```bash
+   cp .env_example .env
+Edite o .env e adicione suas variáveis:
 
-Vá para Configurações > Sistema > Integrações (ou Admins & Users > API Keys em algumas versões).
+ini
+Copiar código
+UNIFI_HOST=172.16.0.1
+UNIFI_PORT=443
+SITE_ID=default
+VERIFY_SSL=False
+API_KEY=SEU_API_KEY_UNIFI
 
-Crie uma nova API Key (Chave de API) com permissões de Super Administrador.
+PUSH_URL_WAN1=
+PUSH_URL_WAN2=
 
-Copie a chave.
+SLACK_WEBHOOK_URL=https://hooks.slack.com/services/SEU/WEBHOOK/AQUI
+Instale as dependências:
 
-Uptime Kuma:
+bash
+Copiar código
+pip install requests urllib3 python-dotenv
+🧠 Como Funciona
+O script lê o status das interfaces WAN (wan1, wan2) via API UniFi
 
-Crie dois (2) monitores do tipo Push (ex: "Link MUNDIVOX (WAN1)" e "Link VIVO (WAN2)").
+Compara o resultado com o último estado salvo em wan_status_state.json
 
-Desligue todas as notificações nativas do Uptime Kuma para estes monitores (o script irá geri-las).
+Se houver mudança (ex: link caiu ou voltou):
 
-Copie as URLs de Push de cada monitor.
+Envia mensagem formatada para o Slack
 
-Slack:
+Atualiza o Uptime Kuma via push URL
 
-Vá para Configurações e Administração > Gerir Aplicações > Incoming Webhooks.
+Salva o novo estado no JSON
 
-Crie um novo Webhook de Entrada (Incoming Webhook) para o canal desejado (ex: #alertas-rede).
+💬 Exemplo de Notificações
+🟥 Quando o link cai:
 
-Copie a Webhook URL.
+perl
+Copiar código
+🔴 Atenção: O link *VIVO* está com uma interrupção no momento.
+A conexão pode apresentar instabilidade.
+Nossa equipe de TI já foi notificada e está cuidando do problema.
+🟩 Quando o link volta:
 
-4.3. Configuração do Script
-Edite as variáveis no topo do ficheiro monitor_unifi.py com as chaves e URLs que acabou de gerar.
+bash
+Copiar código
+🟢 Serviço Recuperado: O link *VIVO* está novamente operacional.
+🕹️ Execução
+Rodando manualmente
+bash
+Copiar código
+python webhook.py
+Rodando em background (sem console)
+bash
+Copiar código
+pythonw webhook.py
+Execução automática
+Windows: Agende via Agendador de Tarefas a cada 1 minuto
 
-Python
+Linux/macOS: Adicione ao crontab:
 
-# ============ CONFIGURAÇÕES UNIFI ============
-UNIFI_HOST = "172.16.0.1"
-UNIFI_PORT = "443"
-SITE_ID = "default"         # Encontre o seu na URL do portal UniFi
-VERIFY_SSL = False
-API_KEY = "SUA_API_KEY_DO_UNIFI_AQUI"
+bash
+Copiar código
+* * * * * /usr/bin/python3 /caminho/para/webhook.py
+🧩 Integração com Uptime Kuma
+Cada link (Vivo / Mundivox, etc.) deve estar cadastrado no Kuma como monitor tipo “Push”.
+O script enviará automaticamente os heartbeats, mantendo o status sincronizado.
 
-# ============ CONFIGURAÇÕES UPTIME KUMA ============
-PUSH_URL_VIVO = "URL_DE_PUSH_DO_KUMA_PARA_VIVO"
-PUSH_URL_MUNDIVOX = "URL_DE_PUSH_DO_KUMA_PARA_MUNDIVOX"
+Você pode estilizar sua página pública do Kuma com CSS customizado — veja o tema sugerido em /styles/kuma-dark.css.
 
-# ============ CONFIGURAÇÕES SLACK ============
-SLACK_WEBHOOK_URL = "SUA_WEBHOOK_URL_DO_SLACK_AQUI"
-5. Implantação (Agendador de Tarefas do Windows)
-Para garantir que o script é executado 24/7, configure uma tarefa no Agendador de Tarefas do Windows.
+🗂️ Exemplo de Log
+yaml
+Copiar código
+INFO: Iniciando script de monitoramento...
+INFO: Dispositivo Gateway encontrado: UDM-Pro
+INFO: Notificação Slack enviada para MUNDIVOX
+INFO: Heartbeat Uptime Kuma enviado para: MUNDIVOX
+INFO: Estado atual salvo: {'wan1': True, 'wan2': True}
 
-Abra o Agendador de Tarefas (taskschd.msc).
 
-Crie uma nova Tarefa (não "Tarefa Básica").
+🧑‍💻 Autor
+Bruno Tolentino
+Infraestrutura e Automação de Monitoramento
+📡 Projeto interno de monitoramento WAN — UniFi + Kuma + Slack
 
-Separador: Geral
-
-Nome: Monitor WAN UniFi
-
-Marque "Executar estando o usuário conectado ou não".
-
-Marque "Executar com privilégios mais altos".
-
-Separador: Disparadores
-
-Novo: Iniciar "Num agendamento", "Diariamente".
-
-Em Definições Avançadas, marque "Repetir tarefa a cada" "1 minuto".
-
-Duração: "Indefinidamente".
-
-Verifique se está "Activado".
-
-Separador: Ações
-
-Novo: Ação "Iniciar um programa".
-
-Programa/script: (Caminho completo para o seu Python. Use aspas se houver espaços).
-
-"C:\Users\Bruno Tolentino\AppData\Local\Programs\Python\Python313\python.exe"
-
-Adicione argumentos (opcional): (Caminho completo para o script. Use aspas).
-
-"C:\Users\Bruno Tolentino\Documents\uptime-unifi-market4u\monitor_unifi.py"
-
-Iniciar em (opcional): (Caminho completo para a pasta do script. Use aspas).
-
-"C:\Users\Bruno Tolentino\Documents\uptime-unifi-market4u"
-
-Separador: Condições
-
-Desmarque "Iniciar a tarefa apenas se o computador estiver ligado à corrente alternada".
-
-Separador: Definições
-
-Verifique se "Se a tarefa já estiver em execução..." está definido como "Não iniciar uma nova instância".
-
-Clique em OK para salvar. A tarefa será executada automaticamente a cada minuto.
